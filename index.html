@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Добровольное подключение</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#0b1020;color:#fff;min-height:100vh;display:grid;place-items:center;padding:20px}
+.card{width:min(720px,100%);background:#151c31;border:1px solid #2a3555;border-radius:24px;padding:28px;box-shadow:0 20px 60px #0008}
+h1{margin:0 0 10px;font-size:30px}.sub{color:#aeb8d1;line-height:1.5}
+.status{margin:22px 0;padding:15px;border-radius:14px;background:#0e1527;border:1px solid #293654}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#8b95aa;margin-right:8px}.on{background:#35d07f;box-shadow:0 0 12px #35d07f}
+button{width:100%;border:0;border-radius:14px;padding:15px;font-size:16px;font-weight:700;cursor:pointer;margin-top:10px}
+.start{background:#5b7cff;color:#fff}.stop{background:#252e45;color:#fff}
+video{width:100%;margin-top:18px;border-radius:16px;background:#05070d;display:none;max-height:55vh}
+.notice{font-size:13px;color:#9da8c2;margin-top:16px;line-height:1.5}
+</style>
+</head>
+<body>
+<main class="card">
+<h1>Добровольное подключение</h1>
+<p class="sub">Эта страница позволяет добровольно поделиться экраном. Доступ начинается только после подтверждения системного окна браузера.</p>
+
+<div class="status"><span id="dot" class="dot"></span><span id="status">Не подключено</span></div>
+
+<button id="start" class="start">Разрешить демонстрацию экрана</button>
+<button id="stop" class="stop" disabled>Остановить доступ</button>
+
+<video id="preview" autoplay muted playsinline></video>
+
+<p class="notice">
+Важно: браузер не предоставляет этой странице скрытый или полный контроль над телефоном.
+Пользователь сам выбирает, чем поделиться, и может прекратить демонстрацию в любой момент.
+</p>
+</main>
+
+<script>
+const start=document.getElementById('start');
+const stop=document.getElementById('stop');
+const video=document.getElementById('preview');
+const status=document.getElementById('status');
+const dot=document.getElementById('dot');
+let stream=null;
+
+function setStatus(text, active=false){
+  status.textContent=text;
+  dot.classList.toggle('on',active);
+}
+
+start.onclick=async()=>{
+  try{
+    stream=await navigator.mediaDevices.getDisplayMedia({
+      video:{displaySurface:"browser"},
+      audio:false
+    });
+    video.srcObject=stream;
+    video.style.display='block';
+    start.disabled=true;
+    stop.disabled=false;
+    setStatus('Демонстрация экрана разрешена',true);
+
+    stream.getVideoTracks()[0].addEventListener('ended',()=>{
+      cleanup();
+    });
+  }catch(e){
+    setStatus('Подключение отменено');
+  }
+};
+
+function cleanup(){
+  if(stream) stream.getTracks().forEach(t=>t.stop());
+  stream=null;
+  video.srcObject=null;
+  video.style.display='none';
+  start.disabled=false;
+  stop.disabled=true;
+  setStatus('Доступ остановлен');
+}
+stop.onclick=cleanup;
+</script>
+</body>
+</html>
